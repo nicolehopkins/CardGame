@@ -1,36 +1,7 @@
-.container {
-    justify-content: center;
-    text-align: center;
-    background-color: lightgray;
-    width: 100%;
-    height: 250px;
-    padding: 30px;
-}
-
-.js-playDeck {
-    background-color: #DC3545;
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-}
-
-.js-newDeck {
-    background-color: #28A745;
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;  
-}
-
-.deck-container {
+.deck-container-js {
+    box-sizing: border-box;
     display: flex;
     flex: wrap;
-    width: 100%
+    width: 100%;
+    margin: 20px;
 }
