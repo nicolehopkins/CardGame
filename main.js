@@ -1,3 +1,4 @@
+//LOCAL STORAGE
 class Storage {
     constructor(key) {
         this.key = key;
@@ -13,114 +14,101 @@ class Storage {
         window.localStorage.setItem(this.key, JSON.stringify(data))
     }
 }
-  
-const GETNewDeck = (url, cb) => {
-
-    let url = 'https://deckofcardsapi.com/api/deck/new/';
-
-    let request = new XMLHttpRequest();
-    request.open("GET", url);
-    request.addEventListener('load', (response) => {
-        const data = JSON.parse(response.currentTarget.response);
-        // cb(data);
-        console.log(data);
-    })
-    request.send();
-}
-
-const drawCard = (url, cb) => {
-    const deck_id = data.deck_id;
-    let url = `https://deckofcardsapi.com/api/deck/${deck_id}/draw/?count=2`;
-
-    let request = new XMLHttpRequest();
-    request.open("GET", url);
-    request.addEventListener('load', (response) => {
-        const data = JSON.parse(response.currentTarget.response);
-        cb(data);
-        console.log(data);
-    })
-    request.send();
-}
 
 
-let state = {
-    isNew: 'active',
-    deck_id: 'c0kfjhypmner',
-    count: '51',
-    cards: [{
-        img: ['https://deckofcardsapi.com/static/img/KH.png'],
-        value: ['KING'],
-        suit: ['HEARTS'],
-    }]
-}
-
-const cardArr = [];
-for (let card of cards) {
-    let currentCard = data.cards[i];
-    cardArr.push(currentCard)
-
-}
-
+//GLOBAL VARIABLES
+const deck_info = document.querySelector('.deck-info-js')
+const deck_container = document.querySelector('.deck-container-js')
+const createDeckButton = document.querySelector('.create-deck-js')
+const drawCardButton = document.querySelector('.draw-card-js');
 
 
 const storage = new Storage('app-state');
-const container = document.querySelector('.container');
-const newDeck = document.querySelector('.js-newDeck');
+//STATE
+let state = {
+    cards_remaining: 0,
+    deck_id: '',
+    deck: []
+}
+console.log(state)
 
-const cardToHTML = (isNew, deck_id, count, img, value, suit) => {
-    if (isNew) {
-        return `<div class='row'>
-        <h1>My Deck of Cards</h1>
-        <button class='js-newDeck'>New Deck</button>
 
-    </div>`;
-    }
-    else return `<div class="container active">
-    <div class='row'>
-        <h1>My Deck of Cards</h1>
-        <button class='js-playDeck'>Draw Card</button>
-        <button class='js-newDeck'>New Deck</button>
-        <h4>Deck ID: ${deck_id}</h4>
-        <h3>Cards Left In Deck: ${count}</h3>
-    </div>
-    <div class='deck-container'>
-        <ul>
-            <img src='${img}'>
-            <a>${value} of ${suit}</a>
-        </ul>`;
+//OBJECTS TO HTML
+const deckInfoToHTML = (state) => {
+    return `<p class='h6'>Deck ID: ${state.deck_id}</p>
+    <p class='h5'>Cards Left in Deck: ${state.cards_remaining}</p>`
 }
 
-container.addEventListener('click', e => {
-    if (e.target.matches('.js-newDeck')) {
-        state.isNew = true;
-        GETNewDeck(url, cb => {
-            storage.save(state);
-            renderNew(state);
-        })
-    }
-    if (e.target.matches('.js-playDeck')) {
-        state.isNew = false;
-        drawCard(url, cb => {
-            storage.save(state);
-            renderGamePlay(state);
-        })
-    }
-    else return;
+const imgToHTML = (url, suit, value) => {
+    return `<div class='col' style='width: 25%'><img src='${url}'>
+    <p>${value} of ${suit} </p></div>`
+}
+
+
+//RENDER 
+const render = (state) => {
+    deck_info.innerHTML = deckInfoToHTML(state);
+
+    let cards = '';
+    state.deck.forEach(e => {
+        const {suit, value, image} = e.cards[0];
+        cards += imgToHTML(image, suit, value);
+    })
+    deck_container.innerHTML = cards;
+
+}
+
+//API CALLS
+const getDeck = (cb) => {
+    const request = new XMLHttpRequest()
+        request.open('GET', 'https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1')
+        request.addEventListener('load', (response) => {
+        let data = JSON.parse(response.target.response)
+        state.deck = [];
+        state.deck_id = data.deck_id
+        state.cards_remaining = data.remaining
+        storage.save(state)
+        cb(data)
+    })
+    request.send()
+}
+
+const drawCard = (ID, cb) => {
+    const request = new XMLHttpRequest()
+    request.open('GET', `https://deckofcardsapi.com/api/deck/${ID}/draw/?count=1`)
+    request.addEventListener('load', (response) => {
+    let data = JSON.parse(response.target.response)
+    console.log(data)
+    state.deck.unshift(data)
+    state.cards_remaining = data.remaining;
+
+    storage.save(state)
+    cb(data)
+    })
+    request.send()
+}
+
+
+//EVENT LISTENERS
+createDeckButton.addEventListener('click',(e)=>{
+    getDeck((d)=>{
+        render(state)
+    })
+})
+
+drawCardButton.addEventListener('click', (e) => {
+    drawCard(state.deck_id, (d) => {
+        render(state);
+        console.log(state.deck)
+    })
 })
 
 
-const renderNew = (state) => {
-    container.classList.add('active');
-    container.classList.remove('hidden');
-  
-    container.innerHTML = cardToHTML(state);
-}
-renderNew(state);
 
-const renderGamePlay = (state) => {
-    container.classList.remove('active');
-    constainer.classList.add('hidden');
-
-    container.innerHTML = cardToHTML(state);
+const stored_state = storage.getStorage();
+if (stored_state) {
+    // If there is then apply that to my state in Memory
+    state = stored_state;
 }
-renderGamePlay(state)
+
+render(state);
